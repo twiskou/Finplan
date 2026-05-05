@@ -18,13 +18,16 @@ export const metadata: Metadata = {
 }
 
 import { ThemeProvider } from '@/components/theme-provider'
+import { LanguageProvider } from '@/contexts/LanguageContext'
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr" suppressHydrationWarning>
       <body className={`${inter.variable} ${jakarta.variable} font-sans antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
-          {children}
+          <LanguageProvider>
+            {children}
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>

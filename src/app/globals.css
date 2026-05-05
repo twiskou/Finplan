@@ -39,6 +39,7 @@
 :root {
   --bg-main: #f8fafc;
   --text-main: #0f172a;
+  --text-heading: #0f172a;
   --bg-card-alpha: rgba(255, 255, 255, 0.8);
   --border-card: rgba(99, 102, 241, 0.15);
   --border-card-hover: rgba(99, 102, 241, 0.4);
@@ -54,11 +55,14 @@
   --bg-stat-card: rgba(255, 255, 255, 0.7);
   --bg-option: #ffffff;
   --scrollbar-track: #f1f5f9;
+  --bg-nav: rgba(248, 250, 252, 0.95);
+  --border-nav: rgba(99, 102, 241, 0.12);
 }
 
 .dark {
   --bg-main: #0f0f1a;
   --text-main: #e2e8f0;
+  --text-heading: #ffffff;
   --bg-card-alpha: rgba(30, 30, 46, 0.8);
   --border-card: rgba(99, 102, 241, 0.15);
   --border-card-hover: rgba(99, 102, 241, 0.3);
@@ -74,6 +78,8 @@
   --bg-stat-card: rgba(30, 30, 46, 0.7);
   --bg-option: #1e1e2e;
   --scrollbar-track: #1e1e2e;
+  --bg-nav: rgba(15, 15, 26, 0.95);
+  --border-nav: rgba(99, 102, 241, 0.12);
 }
 
 html {

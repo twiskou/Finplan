@@ -2,8 +2,9 @@
 import { useEffect, useState } from 'react'
 import { TrendingUp, TrendingDown, Wallet, Target, ArrowUpRight, ArrowDownRight, PiggyBank, Brain } from 'lucide-react'
 import Link from 'next/link'
-import { formatCurrency, getCategoryColor, getMonthName } from '@/lib/utils'
-import { Doughnut, Bar, Line } from 'react-chartjs-2'
+import { formatCurrency, getCategoryColor } from '@/lib/utils'
+import { useTranslation } from '@/contexts/LanguageContext'
+import { Doughnut, Bar } from 'react-chartjs-2'
 import {
   Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale,
   LinearScale, BarElement, LineElement, PointElement, Filler
@@ -16,6 +17,7 @@ interface Budget { category: string; limit: number; spent: number }
 interface SavingGoal { id: string; name: string; targetAmount: number; savedAmount: number; icon: string; color: string }
 
 export default function DashboardPage() {
+  const { t } = useTranslation()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [budgets, setBudgets] = useState<Budget[]>([])
   const [goals, setGoals] = useState<SavingGoal[]>([])
@@ -43,7 +45,6 @@ export default function DashboardPage() {
   const balance = income - expense
   const savingsRate = income > 0 ? Math.round((balance / income) * 100) : 0
 
-  // Expense by category for donut
   const expByCat: Record<string, number> = {}
   transactions.filter(t => t.type === 'EXPENSE').forEach(t => {
     expByCat[t.category] = (expByCat[t.category] || 0) + t.amount
@@ -51,10 +52,9 @@ export default function DashboardPage() {
   const catLabels = Object.keys(expByCat)
   const catValues = Object.values(expByCat)
 
-  // Last 6 months income vs expense
   const months6 = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(year, month - 1 - (5 - i), 1)
-    return { month: d.getMonth() + 1, year: d.getFullYear(), label: getMonthName(d.getMonth() + 1).slice(0, 3) }
+    return { month: d.getMonth() + 1, year: d.getFullYear(), label: t(`month.${d.getMonth() + 1}` as Parameters<typeof t>[0]).slice(0, 3) }
   })
 
   if (loading) {
@@ -67,25 +67,26 @@ export default function DashboardPage() {
 
   return (
     <div style={{ paddingBottom: '5rem', maxWidth: '1200px' }}>
-      {/* Header */}
       <div style={{ marginBottom: '1.75rem' }}>
-        <h1 style={{ fontFamily: 'var(--font-jakarta)', fontSize: '1.5rem', fontWeight: 800, color: 'white' }}>
-          Tableau de bord
+        <h1 style={{ fontFamily: 'var(--font-jakarta)', fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-heading)' }}>
+          {t('dashboard.title')}
         </h1>
-        <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '0.25rem' }}>{getMonthName(month)} {year}</p>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
+          {t(`month.${month}` as Parameters<typeof t>[0])} {year}
+        </p>
       </div>
 
       {/* KPI Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
         {[
-          { label: 'Solde', value: balance, icon: Wallet, color: balance >= 0 ? '#22c55e' : '#ef4444', bg: balance >= 0 ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)' },
-          { label: 'Revenus', value: income, icon: TrendingUp, color: '#22c55e', bg: 'rgba(34,197,94,0.08)' },
-          { label: 'Dépenses', value: expense, icon: TrendingDown, color: '#ef4444', bg: 'rgba(239,68,68,0.08)' },
-          { label: 'Taux d\'épargne', value: null, display: `${savingsRate}%`, icon: PiggyBank, color: '#6366f1', bg: 'rgba(99,102,241,0.08)' },
+          { label: t('dashboard.balance'), value: balance, icon: Wallet, color: balance >= 0 ? '#22c55e' : '#ef4444', bg: balance >= 0 ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)' },
+          { label: t('dashboard.income'), value: income, icon: TrendingUp, color: '#22c55e', bg: 'rgba(34,197,94,0.08)' },
+          { label: t('dashboard.expenses'), value: expense, icon: TrendingDown, color: '#ef4444', bg: 'rgba(239,68,68,0.08)' },
+          { label: t('dashboard.savingsRate'), value: null, display: `${savingsRate}%`, icon: PiggyBank, color: '#6366f1', bg: 'rgba(99,102,241,0.08)' },
         ].map(card => (
           <div key={card.label} className="glass-card" style={{ padding: '1.25rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.875rem' }}>
-              <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{card.label}</span>
+              <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{card.label}</span>
               <div style={{ width: 36, height: 36, borderRadius: '10px', background: card.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <card.icon size={18} style={{ color: card.color }} />
               </div>
@@ -97,52 +98,37 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Charts row */}
+      {/* Charts */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
-        {/* Donut */}
         <div className="glass-card" style={{ padding: '1.25rem' }}>
-          <h3 style={{ fontFamily: 'var(--font-jakarta)', fontWeight: 700, color: 'white', marginBottom: '1rem', fontSize: '0.95rem' }}>Dépenses par catégorie</h3>
+          <h3 style={{ fontFamily: 'var(--font-jakarta)', fontWeight: 700, color: 'var(--text-heading)', marginBottom: '1rem', fontSize: '0.95rem' }}>{t('dashboard.expensesByCategory')}</h3>
           {catLabels.length > 0 ? (
             <div className="chart-container" style={{ height: 200 }}>
               <Doughnut
-                data={{
-                  labels: catLabels,
-                  datasets: [{ data: catValues, backgroundColor: catLabels.map(c => getCategoryColor(c)), borderWidth: 0, hoverOffset: 4 }],
-                }}
-                options={{
-                  responsive: true, maintainAspectRatio: false, cutout: '70%',
-                  plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 12 } } },
-                }}
+                data={{ labels: catLabels, datasets: [{ data: catValues, backgroundColor: catLabels.map(c => getCategoryColor(c)), borderWidth: 0, hoverOffset: 4 }] }}
+                options={{ responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 12 } } } }}
               />
             </div>
           ) : (
-            <div style={{ textAlign: 'center', padding: '2rem', color: '#475569' }}>
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
               <Target size={32} style={{ margin: '0 auto 0.5rem' }} />
-              <p style={{ fontSize: '0.875rem' }}>Aucune dépense ce mois</p>
+              <p style={{ fontSize: '0.875rem' }}>{t('dashboard.noExpenses')}</p>
             </div>
           )}
         </div>
 
-        {/* Bar chart */}
         <div className="glass-card" style={{ padding: '1.25rem' }}>
-          <h3 style={{ fontFamily: 'var(--font-jakarta)', fontWeight: 700, color: 'white', marginBottom: '1rem', fontSize: '0.95rem' }}>Revenus vs Dépenses</h3>
+          <h3 style={{ fontFamily: 'var(--font-jakarta)', fontWeight: 700, color: 'var(--text-heading)', marginBottom: '1rem', fontSize: '0.95rem' }}>{t('dashboard.incomeVsExpenses')}</h3>
           <div style={{ height: 200 }}>
             <Bar
               data={{
                 labels: months6.map(m => m.label),
                 datasets: [
-                  { label: 'Revenus', data: months6.map(m => transactions.filter(t => t.type === 'INCOME' && new Date(t.date).getMonth() + 1 === m.month && new Date(t.date).getFullYear() === m.year).reduce((s, t) => s + t.amount, 0)), backgroundColor: 'rgba(34,197,94,0.7)', borderRadius: 6 },
-                  { label: 'Dépenses', data: months6.map(m => transactions.filter(t => t.type === 'EXPENSE' && new Date(t.date).getMonth() + 1 === m.month && new Date(t.date).getFullYear() === m.year).reduce((s, t) => s + t.amount, 0)), backgroundColor: 'rgba(239,68,68,0.7)', borderRadius: 6 },
+                  { label: t('dashboard.income'), data: months6.map(m => transactions.filter(t => t.type === 'INCOME' && new Date(t.date).getMonth() + 1 === m.month && new Date(t.date).getFullYear() === m.year).reduce((s, t) => s + t.amount, 0)), backgroundColor: 'rgba(34,197,94,0.7)', borderRadius: 6 },
+                  { label: t('dashboard.expenses'), data: months6.map(m => transactions.filter(t => t.type === 'EXPENSE' && new Date(t.date).getMonth() + 1 === m.month && new Date(t.date).getFullYear() === m.year).reduce((s, t) => s + t.amount, 0)), backgroundColor: 'rgba(239,68,68,0.7)', borderRadius: 6 },
                 ],
               }}
-              options={{
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 12 } } },
-                scales: {
-                  x: { ticks: { color: '#475569' }, grid: { color: 'rgba(99,102,241,0.05)' } },
-                  y: { ticks: { color: '#475569', callback: (v) => `${Number(v).toLocaleString()}` }, grid: { color: 'rgba(99,102,241,0.05)' } },
-                },
-              }}
+              options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 12 } } }, scales: { x: { ticks: { color: '#475569' }, grid: { color: 'rgba(99,102,241,0.05)' } }, y: { ticks: { color: '#475569', callback: (v) => `${Number(v).toLocaleString()}` }, grid: { color: 'rgba(99,102,241,0.05)' } } } }}
             />
           </div>
         </div>
@@ -150,17 +136,16 @@ export default function DashboardPage() {
 
       {/* Budgets + Goals */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
-        {/* Budgets */}
         <div className="glass-card" style={{ padding: '1.25rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-            <h3 style={{ fontFamily: 'var(--font-jakarta)', fontWeight: 700, color: 'white', fontSize: '0.95rem' }}>Budgets du mois</h3>
-            <Link href="/budgets" style={{ color: '#6366f1', fontSize: '0.8rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>Voir tout <ArrowUpRight size={14} /></Link>
+            <h3 style={{ fontFamily: 'var(--font-jakarta)', fontWeight: 700, color: 'var(--text-heading)', fontSize: '0.95rem' }}>{t('dashboard.budgetsMonth')}</h3>
+            <Link href="/budgets" style={{ color: '#6366f1', fontSize: '0.8rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>{t('common.seeAll')} <ArrowUpRight size={14} /></Link>
           </div>
           {budgets.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '1.5rem', color: '#475569', fontSize: '0.875rem' }}>
+            <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
               <PiggyBank size={28} style={{ margin: '0 auto 0.5rem' }} />
-              <p>Aucun budget défini</p>
-              <Link href="/budgets" className="btn-primary" style={{ marginTop: '0.75rem', display: 'inline-flex', padding: '0.375rem 0.875rem', fontSize: '0.8rem' }}>Créer un budget</Link>
+              <p>{t('dashboard.noBudgets')}</p>
+              <Link href="/budgets" className="btn-primary" style={{ marginTop: '0.75rem', display: 'inline-flex', padding: '0.375rem 0.875rem', fontSize: '0.8rem' }}>{t('dashboard.createBudget')}</Link>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
@@ -170,15 +155,12 @@ export default function DashboardPage() {
                 return (
                   <div key={b.category}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.375rem' }}>
-                      <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#cbd5e1' }}>{b.category}</span>
-                      <span style={{ fontSize: '0.78rem', color: color }}>{pct.toFixed(0)}%</span>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)' }}>{b.category}</span>
+                      <span style={{ fontSize: '0.78rem', color }}>{pct.toFixed(0)}%</span>
                     </div>
-                    <div className="progress-bar">
-                      <div className="progress-fill" style={{ width: `${pct}%`, background: color }} />
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.25rem', fontSize: '0.75rem', color: '#64748b' }}>
-                      <span>{formatCurrency(b.spent)}</span>
-                      <span>{formatCurrency(b.limit)}</span>
+                    <div className="progress-bar"><div className="progress-fill" style={{ width: `${pct}%`, background: color }} /></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.25rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      <span>{formatCurrency(b.spent)}</span><span>{formatCurrency(b.limit)}</span>
                     </div>
                   </div>
                 )
@@ -187,17 +169,16 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Goals */}
         <div className="glass-card" style={{ padding: '1.25rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-            <h3 style={{ fontFamily: 'var(--font-jakarta)', fontWeight: 700, color: 'white', fontSize: '0.95rem' }}>Objectifs d&apos;épargne</h3>
-            <Link href="/goals" style={{ color: '#6366f1', fontSize: '0.8rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>Voir tout <ArrowUpRight size={14} /></Link>
+            <h3 style={{ fontFamily: 'var(--font-jakarta)', fontWeight: 700, color: 'var(--text-heading)', fontSize: '0.95rem' }}>{t('dashboard.savingsGoals')}</h3>
+            <Link href="/goals" style={{ color: '#6366f1', fontSize: '0.8rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>{t('common.seeAll')} <ArrowUpRight size={14} /></Link>
           </div>
           {goals.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '1.5rem', color: '#475569', fontSize: '0.875rem' }}>
+            <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
               <Target size={28} style={{ margin: '0 auto 0.5rem' }} />
-              <p>Aucun objectif défini</p>
-              <Link href="/goals" className="btn-primary" style={{ marginTop: '0.75rem', display: 'inline-flex', padding: '0.375rem 0.875rem', fontSize: '0.8rem' }}>Créer un objectif</Link>
+              <p>{t('dashboard.noGoals')}</p>
+              <Link href="/goals" className="btn-primary" style={{ marginTop: '0.75rem', display: 'inline-flex', padding: '0.375rem 0.875rem', fontSize: '0.8rem' }}>{t('dashboard.createGoal')}</Link>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
@@ -206,15 +187,12 @@ export default function DashboardPage() {
                 return (
                   <div key={g.id}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.375rem' }}>
-                      <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#cbd5e1' }}>{g.icon} {g.name}</span>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)' }}>{g.icon} {g.name}</span>
                       <span style={{ fontSize: '0.78rem', color: '#818cf8' }}>{pct.toFixed(0)}%</span>
                     </div>
-                    <div className="progress-bar">
-                      <div className="progress-fill" style={{ width: `${pct}%`, background: g.color || '#6366f1' }} />
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.25rem', fontSize: '0.75rem', color: '#64748b' }}>
-                      <span>{formatCurrency(g.savedAmount)}</span>
-                      <span>{formatCurrency(g.targetAmount)}</span>
+                    <div className="progress-bar"><div className="progress-fill" style={{ width: `${pct}%`, background: g.color || '#6366f1' }} /></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.25rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      <span>{formatCurrency(g.savedAmount)}</span><span>{formatCurrency(g.targetAmount)}</span>
                     </div>
                   </div>
                 )
@@ -227,29 +205,29 @@ export default function DashboardPage() {
       {/* Recent Transactions */}
       <div className="glass-card" style={{ padding: '1.25rem', marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-          <h3 style={{ fontFamily: 'var(--font-jakarta)', fontWeight: 700, color: 'white', fontSize: '0.95rem' }}>Transactions récentes</h3>
-          <Link href="/transactions" style={{ color: '#6366f1', fontSize: '0.8rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>Voir tout <ArrowUpRight size={14} /></Link>
+          <h3 style={{ fontFamily: 'var(--font-jakarta)', fontWeight: 700, color: 'var(--text-heading)', fontSize: '0.95rem' }}>{t('dashboard.recentTransactions')}</h3>
+          <Link href="/transactions" style={{ color: '#6366f1', fontSize: '0.8rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>{t('common.seeAll')} <ArrowUpRight size={14} /></Link>
         </div>
         {transactions.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '2rem', color: '#475569' }}>
-            <p style={{ fontSize: '0.875rem' }}>Aucune transaction ce mois</p>
-            <Link href="/transactions" className="btn-primary" style={{ marginTop: '0.75rem', display: 'inline-flex', padding: '0.375rem 0.875rem', fontSize: '0.8rem' }}>Ajouter une transaction</Link>
+          <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+            <p style={{ fontSize: '0.875rem' }}>{t('dashboard.noTransactions')}</p>
+            <Link href="/transactions" className="btn-primary" style={{ marginTop: '0.75rem', display: 'inline-flex', padding: '0.375rem 0.875rem', fontSize: '0.8rem' }}>{t('dashboard.addTransaction')}</Link>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-            {transactions.slice(0, 6).map((t, i) => (
+            {transactions.slice(0, 6).map((tx, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.625rem 0.75rem', borderRadius: '0.625rem', background: 'rgba(99,102,241,0.04)', border: '1px solid rgba(99,102,241,0.08)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <div style={{ width: 34, height: 34, borderRadius: '50%', background: t.type === 'INCOME' ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {t.type === 'INCOME' ? <ArrowUpRight size={16} style={{ color: '#22c55e' }} /> : <ArrowDownRight size={16} style={{ color: '#ef4444' }} />}
+                  <div style={{ width: 34, height: 34, borderRadius: '50%', background: tx.type === 'INCOME' ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {tx.type === 'INCOME' ? <ArrowUpRight size={16} style={{ color: '#22c55e' }} /> : <ArrowDownRight size={16} style={{ color: '#ef4444' }} />}
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#e2e8f0' }}>{t.category}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#475569' }}>{new Date(t.date).toLocaleDateString('fr-FR')}</div>
+                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)' }}>{tx.category}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(tx.date).toLocaleDateString('fr-FR')}</div>
                   </div>
                 </div>
-                <span style={{ fontWeight: 700, color: t.type === 'INCOME' ? '#22c55e' : '#ef4444', fontSize: '0.9rem' }}>
-                  {t.type === 'INCOME' ? '+' : '-'}{formatCurrency(t.amount)}
+                <span style={{ fontWeight: 700, color: tx.type === 'INCOME' ? '#22c55e' : '#ef4444', fontSize: '0.9rem' }}>
+                  {tx.type === 'INCOME' ? '+' : '-'}{formatCurrency(tx.amount)}
                 </span>
               </div>
             ))}
@@ -259,20 +237,14 @@ export default function DashboardPage() {
 
       {/* AI CTA */}
       <Link href="/insights" style={{ textDecoration: 'none' }}>
-        <div style={{
-          padding: '1.25rem', borderRadius: '1rem',
-          background: 'linear-gradient(135deg, rgba(79,70,229,0.2), rgba(139,92,246,0.1))',
-          border: '1px solid rgba(99,102,241,0.3)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          cursor: 'pointer', transition: 'all 0.2s',
-        }}>
+        <div style={{ padding: '1.25rem', borderRadius: '1rem', background: 'linear-gradient(135deg, rgba(79,70,229,0.2), rgba(139,92,246,0.1))', border: '1px solid rgba(99,102,241,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', transition: 'all 0.2s' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
             <div style={{ width: 44, height: 44, borderRadius: '12px', background: 'rgba(99,102,241,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Brain size={22} style={{ color: '#818cf8' }} />
             </div>
             <div>
-              <div style={{ fontWeight: 700, color: 'white', fontSize: '0.95rem', fontFamily: 'var(--font-jakarta)' }}>Insights IA personnalisés</div>
-              <div style={{ color: '#64748b', fontSize: '0.8rem' }}>Découvrez des conseils basés sur vos habitudes</div>
+              <div style={{ fontWeight: 700, color: 'var(--text-heading)', fontSize: '0.95rem', fontFamily: 'var(--font-jakarta)' }}>{t('dashboard.aiInsights')}</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{t('dashboard.aiSubtitle')}</div>
             </div>
           </div>
           <ArrowUpRight size={20} style={{ color: '#6366f1' }} />

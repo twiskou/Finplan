@@ -7,31 +7,45 @@ import {
   FileText, CreditCard, Brain, Settings, Bell, LogOut,
   TrendingUp, Menu, X, ChevronRight, Shield
 } from 'lucide-react'
+import { useTranslation } from '@/contexts/LanguageContext'
 
-const navItems = [
-  { href: '/dashboard', icon: LayoutDashboard, label: 'Tableau de bord' },
-  { href: '/transactions', icon: ArrowLeftRight, label: 'Transactions' },
-  { href: '/budgets', icon: PiggyBank, label: 'Budgets' },
-  { href: '/goals', icon: Target, label: 'Objectifs' },
-  { href: '/bills', icon: FileText, label: 'Factures' },
-  { href: '/debts', icon: CreditCard, label: 'Dettes' },
-  { href: '/insights', icon: Brain, label: 'Insights IA' },
-]
+interface User { id: string; name: string; email: string; role: string; plan: string }
 
-interface User {
-  id: string
-  name: string
-  email: string
-  role: string
-  plan: string
+// ConfirmModal — replaces native confirm()
+function ConfirmModal({ message, onConfirm, onCancel }: { message: string; onConfirm: () => void; onCancel: () => void }) {
+  const { t } = useTranslation()
+  return (
+    <div className="modal-overlay" onClick={onCancel}>
+      <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 360, textAlign: 'center' }}>
+        <p style={{ color: 'var(--text-main)', marginBottom: '1.5rem', fontSize: '0.95rem' }}>{message}</p>
+        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+          <button onClick={onCancel} className="btn-secondary">{t('common.cancel')}</button>
+          <button onClick={onConfirm} className="btn-danger">{t('common.confirm')}</button>
+        </div>
+      </div>
+    </div>
+  )
 }
+
+export { ConfirmModal }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
+  const { t } = useTranslation()
   const [user, setUser] = useState<User | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [notifCount, setNotifCount] = useState(0)
+
+  const navItems = [
+    { href: '/dashboard', icon: LayoutDashboard, label: t('nav.dashboard') },
+    { href: '/transactions', icon: ArrowLeftRight, label: t('nav.transactions') },
+    { href: '/budgets', icon: PiggyBank, label: t('nav.budgets') },
+    { href: '/goals', icon: Target, label: t('nav.goals') },
+    { href: '/bills', icon: FileText, label: t('nav.bills') },
+    { href: '/debts', icon: CreditCard, label: t('nav.debts') },
+    { href: '/insights', icon: Brain, label: t('nav.insights') },
+  ]
 
   useEffect(() => {
     fetch('/api/auth/me').then(r => r.json()).then(d => {
@@ -57,7 +71,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: 40, height: 40, border: '3px solid rgba(99,102,241,0.3)', borderTopColor: '#6366f1', borderRadius: '50%', margin: '0 auto 1rem', animation: 'spin 0.8s linear infinite' }} />
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-          <p style={{ color: '#64748b' }}>Chargement...</p>
+          <p style={{ color: '#64748b' }}>{t('common.loading')}</p>
         </div>
       </div>
     )
@@ -65,7 +79,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const SidebarContent = () => (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '1.25rem' }}>
-      {/* Logo */}
       <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none', marginBottom: '2rem', padding: '0 0.25rem' }}>
         <div style={{ width: 36, height: 36, borderRadius: '10px', background: 'linear-gradient(135deg, #4f46e5, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <TrendingUp size={20} color="white" />
@@ -75,7 +88,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </span>
       </Link>
 
-      {/* Nav */}
       <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: 1 }}>
         {navItems.map(item => (
           <Link
@@ -94,17 +106,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div style={{ height: '1px', background: 'rgba(99,102,241,0.1)', margin: '0.5rem 0' }} />
             <Link href="/admin" className={`sidebar-link ${pathname.startsWith('/admin') ? 'active' : ''}`} onClick={() => setSidebarOpen(false)}>
               <Shield size={18} />
-              Administration
+              {t('nav.admin')}
             </Link>
           </>
         )}
       </nav>
 
-      {/* Bottom section */}
       <div style={{ borderTop: '1px solid rgba(99,102,241,0.1)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
         <Link href="/notifications" className={`sidebar-link ${isActive('/notifications') ? 'active' : ''}`} style={{ position: 'relative' }} onClick={() => setSidebarOpen(false)}>
           <Bell size={18} />
-          Notifications
+          {t('nav.notifications')}
           {notifCount > 0 && (
             <span style={{ marginLeft: 'auto', background: '#ef4444', color: 'white', fontSize: '0.7rem', fontWeight: 700, padding: '0.1rem 0.4rem', borderRadius: '9999px', minWidth: '18px', textAlign: 'center' }}>
               {notifCount}
@@ -113,15 +124,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </Link>
         <Link href="/settings" className={`sidebar-link ${isActive('/settings') ? 'active' : ''}`} onClick={() => setSidebarOpen(false)}>
           <Settings size={18} />
-          Paramètres
+          {t('nav.settings')}
         </Link>
         <button onClick={handleLogout} className="sidebar-link" style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}>
           <LogOut size={18} />
-          Déconnexion
+          {t('nav.logout')}
         </button>
       </div>
 
-      {/* User Card */}
       <div style={{ marginTop: '1rem', padding: '0.875rem', borderRadius: '0.75rem', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.12)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
           <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, #4f46e5, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.875rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>
@@ -143,10 +153,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-main)' }}>
-      {/* Desktop Sidebar */}
+      {/* Desktop Sidebar — intentionally always dark */}
       <aside style={{
         width: '260px', flexShrink: 0,
-        background: 'rgba(15, 15, 26, 0.95)',
+        background: 'rgba(15, 15, 26, 0.98)',
         borderRight: '1px solid rgba(99, 102, 241, 0.1)',
         position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 30,
         display: 'none',
@@ -177,19 +187,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <header style={{
           height: 60, padding: '0 1.25rem',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          borderBottom: '1px solid rgba(99, 102, 241, 0.1)',
-          background: 'rgba(15, 15, 26, 0.9)',
+          borderBottom: '1px solid var(--border-nav)',
+          background: 'var(--bg-nav)',
           backdropFilter: 'blur(8px)',
           position: 'sticky', top: 0, zIndex: 20,
         }}>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '0.25rem' }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '0.25rem' }}
           >
             {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <Link href="/notifications" style={{ position: 'relative', color: '#94a3b8', display: 'flex' }}>
+            <Link href="/notifications" style={{ position: 'relative', color: 'var(--text-muted)', display: 'flex' }}>
               <Bell size={20} />
               {notifCount > 0 && (
                 <span style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, background: '#ef4444', borderRadius: '50%', fontSize: '0.65rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700 }}>
@@ -203,7 +213,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        {/* Content */}
         <div style={{ flex: 1, padding: '1.5rem 1.25rem', overflowX: 'hidden' }}>
           {children}
         </div>
