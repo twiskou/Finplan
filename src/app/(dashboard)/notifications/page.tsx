@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { Bell, CheckCheck, AlertTriangle, Info, Lightbulb, Megaphone } from 'lucide-react'
+import { useTranslation } from '@/contexts/LanguageContext'
 
 interface Notification {
   id: string; title: string; message: string; isRead: boolean; type: string; createdAt: string
@@ -23,6 +24,7 @@ const typeColors: Record<string, string> = {
 }
 
 export default function NotificationsPage() {
+  const { t } = useTranslation()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -50,15 +52,15 @@ export default function NotificationsPage() {
             <div style={{ width: 40, height: 40, borderRadius: '12px', background: 'rgba(99,102,241,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Bell size={22} style={{ color: '#818cf8' }} />
             </div>
-            <h1 style={{ fontFamily: 'var(--font-jakarta)', fontSize: '1.5rem', fontWeight: 800, color: 'white' }}>Notifications</h1>
+            <h1 style={{ fontFamily: 'var(--font-jakarta)', fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-heading)' }}>{t('notif.title')}</h1>
           </div>
-          <p style={{ color: '#64748b', fontSize: '0.875rem' }}>
-            {unread > 0 ? `${unread} notification(s) non lue(s)` : 'Tout est à jour'}
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+            {unread > 0 ? `${unread} ${t('notif.unreadCount')}` : t('notif.upToDate')}
           </p>
         </div>
         {unread > 0 && (
           <button className="btn-secondary" onClick={markAllRead} style={{ padding: '0.5rem 1rem' }}>
-            <CheckCheck size={16} /> Tout marquer comme lu
+            <CheckCheck size={16} /> {t('notif.markAllRead')}
           </button>
         )}
       </div>
@@ -66,10 +68,10 @@ export default function NotificationsPage() {
       {loading ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>{[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: 80 }} />)}</div>
       ) : notifications.length === 0 ? (
-        <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', color: '#475569' }}>
+        <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
           <Bell size={40} style={{ margin: '0 auto 0.75rem', opacity: 0.5 }} />
-          <p style={{ fontWeight: 600, color: '#94a3b8' }}>Aucune notification</p>
-          <p style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>Vous recevrez ici des alertes et conseils financiers</p>
+          <p style={{ fontWeight: 600, color: 'var(--text-muted)' }}>{t('notif.empty')}</p>
+          <p style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>{t('notif.emptyDesc')}</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
@@ -79,8 +81,8 @@ export default function NotificationsPage() {
             return (
               <div key={n.id} style={{
                 padding: '1rem 1.25rem', borderRadius: '1rem',
-                background: n.isRead ? 'rgba(30,30,46,0.5)' : 'rgba(30,30,46,0.9)',
-                border: `1px solid ${n.isRead ? 'rgba(99,102,241,0.08)' : `${color}33`}`,
+                background: n.isRead ? 'var(--bg-stat-card)' : 'var(--bg-card-alpha)',
+                border: `1px solid ${n.isRead ? 'var(--border-card)' : `${color}33`}`,
                 opacity: n.isRead ? 0.7 : 1,
                 display: 'flex', alignItems: 'flex-start', gap: '0.875rem',
               }}>
@@ -89,11 +91,11 @@ export default function NotificationsPage() {
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                    <span style={{ fontWeight: 700, color: n.isRead ? '#94a3b8' : 'white', fontSize: '0.9rem' }}>{n.title}</span>
+                    <span style={{ fontWeight: 700, color: n.isRead ? 'var(--text-muted)' : 'var(--text-heading)', fontSize: '0.9rem' }}>{n.title}</span>
                     {!n.isRead && <span style={{ width: 6, height: 6, borderRadius: '50%', background: color }} />}
                   </div>
-                  <p style={{ color: '#64748b', fontSize: '0.85rem', lineHeight: 1.5 }}>{n.message}</p>
-                  <span style={{ color: '#334155', fontSize: '0.75rem', marginTop: '0.375rem', display: 'block' }}>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', lineHeight: 1.5 }}>{n.message}</p>
+                  <span style={{ color: 'var(--text-muted)', opacity: 0.7, fontSize: '0.75rem', marginTop: '0.375rem', display: 'block' }}>
                     {new Date(n.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>

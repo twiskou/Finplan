@@ -14,12 +14,14 @@ export async function GET(req: NextRequest) {
   const payload = await getAdmin(req)
   if (!payload) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
 
-  const [totalUsers, premiumUsers, totalTransactions, monthlyRevenue] = await Promise.all([
+  const [totalUsers, premiumUsers, totalTransactions] = await Promise.all([
     prisma.user.count(),
     prisma.user.count({ where: { plan: 'PREMIUM' } }),
     prisma.transaction.count(),
-    prisma.user.count({ where: { plan: 'PREMIUM', createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } } }),
   ])
+  
+  // MRR (Monthly Recurring Revenue) is based on ALL active premium users
+  const monthlyRevenue = premiumUsers
 
   const recentUsers = await prisma.user.findMany({
     orderBy: { createdAt: 'desc' },

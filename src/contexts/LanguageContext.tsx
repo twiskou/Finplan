@@ -1,5 +1,5 @@
 'use client'
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react'
 import { dict, Lang, TranslationKey } from '@/lib/i18n'
 
 interface LanguageContextValue {
@@ -44,17 +44,24 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     document.documentElement.lang = lang
   }, [lang])
 
-  function setLang(l: Lang) {
+  const setLang = useCallback((l: Lang) => {
     setLangState(l)
     localStorage.setItem('finplan_lang', l)
-  }
+  }, [])
 
-  function t(key: TranslationKey): string {
+  const t = useCallback((key: TranslationKey): string => {
     return dict[lang]?.[key] ?? dict['fr'][key] ?? key
-  }
+  }, [lang])
+
+  const contextValue = useMemo(() => ({
+    lang,
+    setLang,
+    t,
+    isRTL: lang === 'ar'
+  }), [lang, setLang, t])
 
   return (
-    <LanguageContext.Provider value={{ lang, setLang, t, isRTL: lang === 'ar' }}>
+    <LanguageContext.Provider value={contextValue}>
       {children}
     </LanguageContext.Provider>
   )

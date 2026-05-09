@@ -19,6 +19,8 @@ export default function GoalsPage() {
   const [showModal, setShowModal] = useState(false)
   const [editGoal, setEditGoal] = useState<SavingGoal | null>(null)
   const [confirmId, setConfirmId] = useState<string | null>(null)
+  const [savingGoal, setSavingGoal] = useState<SavingGoal | null>(null)
+  const [savingAmount, setSavingAmount] = useState('')
   const [form, setForm] = useState({ name: '', targetAmount: '', savedAmount: '0', deadline: '', icon: 'Target', color: '#6366f1' })
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
@@ -60,14 +62,21 @@ export default function GoalsPage() {
   }
 
   async function addSaving(goal: SavingGoal) {
-    const amount = prompt(t('goal.addAmount'))
-    if (!amount || isNaN(Number(amount))) return
-    const newSaved = goal.savedAmount + Number(amount)
-    await fetch(`/api/goals/${goal.id}`, {
+    setSavingGoal(goal)
+    setSavingAmount('')
+  }
+
+  async function handleAddSaving(e: React.FormEvent) {
+    e.preventDefault()
+    if (!savingGoal || !savingAmount || isNaN(Number(savingAmount))) return
+    const newSaved = savingGoal.savedAmount + Number(savingAmount)
+    await fetch(`/api/goals/${savingGoal.id}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...goal, savedAmount: newSaved, targetAmount: goal.targetAmount, isCompleted: newSaved >= goal.targetAmount }),
+      body: JSON.stringify({ ...savingGoal, savedAmount: newSaved, targetAmount: savingGoal.targetAmount, isCompleted: newSaved >= savingGoal.targetAmount }),
     })
-    load(); showToast(`+${Number(amount).toLocaleString()} DA`)
+    load(); showToast(`+${Number(savingAmount).toLocaleString()} DA`)
+    setSavingGoal(null)
+    setSavingAmount('')
   }
 
   const totalTarget = goals.reduce((s, g) => s + g.targetAmount, 0)
@@ -77,6 +86,34 @@ export default function GoalsPage() {
     <div style={{ paddingBottom: '5rem', maxWidth: '900px' }}>
       {toast && <div className={`toast toast-${toast.type}`}>{toast.msg}</div>}
       {confirmId && <ConfirmModal message={t('goal.deleteConfirm')} onConfirm={() => handleDelete(confirmId)} onCancel={() => setConfirmId(null)} />}
+
+      {/* Add Saving Modal */}
+      {savingGoal && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setSavingGoal(null)}>
+          <div className="modal-box" style={{ maxWidth: 360 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+              <h2 style={{ fontFamily: 'var(--font-jakarta)', fontWeight: 800, color: 'var(--text-heading)', fontSize: '1.1rem' }}>
+                {t('goal.save')} — {savingGoal.name}
+              </h2>
+              <button onClick={() => setSavingGoal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={20} /></button>
+            </div>
+            <form onSubmit={handleAddSaving} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.375rem' }}>{t('goal.addAmount')}</label>
+                <input
+                  type="number" min="1" autoFocus
+                  value={savingAmount}
+                  onChange={e => setSavingAmount(e.target.value)}
+                  className="input-field" placeholder="5000" required
+                />
+              </div>
+              <button type="submit" className="btn-primary" style={{ justifyContent: 'center' }}>
+                <Plus size={16} /> {t('goal.save')}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>

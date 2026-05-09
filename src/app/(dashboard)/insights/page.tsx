@@ -4,6 +4,8 @@ import {
   Brain, AlertTriangle, XCircle, Trophy, Star, PiggyBank, TrendingUp,
   Bell, PieChart, CreditCard, Lightbulb, BookOpen, Repeat, ShoppingBag, RefreshCw
 } from 'lucide-react'
+import { useTranslation } from '@/contexts/LanguageContext'
+import { TranslationKey } from '@/lib/i18n'
 
 interface Insight {
   type: 'warning' | 'success' | 'tip' | 'alert' | 'info'
@@ -19,17 +21,18 @@ const ICON_MAP: Record<string, React.ComponentType<{ size?: number; style?: Reac
 }
 
 export default function InsightsPage() {
+  const { t, lang } = useTranslation()
   const [insights, setInsights] = useState<Insight[]>([])
   const [loading, setLoading] = useState(true)
 
   async function load() {
     setLoading(true)
-    const r = await fetch('/api/ai/insights')
+    const r = await fetch(`/api/ai/insights?lang=${lang}`)
     const d = await r.json()
     setInsights(d.insights || [])
     setLoading(false)
   }
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [lang])
 
   const typeColors: Record<string, { bg: string; border: string; icon: string }> = {
     alert: { bg: 'rgba(239,68,68,0.06)', border: '#ef4444', icon: '#ef4444' },
@@ -39,12 +42,12 @@ export default function InsightsPage() {
     info: { bg: 'rgba(59,130,246,0.06)', border: '#3b82f6', icon: '#3b82f6' },
   }
 
-  const typeLabels: Record<string, string> = {
-    alert: 'Alerte',
-    warning: 'Attention',
-    success: 'Bravo',
-    tip: 'Conseil',
-    info: 'Info',
+  const typeLabels: Record<string, TranslationKey> = {
+    alert: 'ai.typeAlert',
+    warning: 'ai.typeWarning',
+    success: 'ai.typeSuccess',
+    tip: 'ai.typeTip',
+    info: 'ai.typeInfo',
   }
 
   return (
@@ -55,12 +58,12 @@ export default function InsightsPage() {
             <div style={{ width: 40, height: 40, borderRadius: '12px', background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Brain size={22} style={{ color: '#818cf8' }} />
             </div>
-            <h1 style={{ fontFamily: 'var(--font-jakarta)', fontSize: '1.5rem', fontWeight: 800, color: 'white' }}>Insights IA</h1>
+            <h1 style={{ fontFamily: 'var(--font-jakarta)', fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-heading)' }}>{t('ai.title')}</h1>
           </div>
-          <p style={{ color: '#64748b', fontSize: '0.875rem' }}>Conseils financiers personnalisés basés sur vos données</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>{t('ai.subtitle')}</p>
         </div>
         <button className="btn-secondary" onClick={load} style={{ padding: '0.5rem 1rem' }}>
-          <RefreshCw size={16} /> Actualiser
+          <RefreshCw size={16} /> {t('ai.refresh')}
         </button>
       </div>
 
@@ -75,9 +78,9 @@ export default function InsightsPage() {
           <Brain size={24} style={{ color: '#a5b4fc' }} />
         </div>
         <div>
-          <div style={{ fontWeight: 700, color: 'white', fontSize: '0.95rem', fontFamily: 'var(--font-jakarta)' }}>Moteur d&apos;insights intelligent</div>
-          <div style={{ color: '#64748b', fontSize: '0.82rem', marginTop: '0.15rem' }}>
-            Analyse automatique de vos transactions, budgets et objectifs pour des recommandations ciblées.
+          <div style={{ fontWeight: 700, color: 'var(--text-heading)', fontSize: '0.95rem', fontFamily: 'var(--font-jakarta)' }}>{t('ai.bannerTitle')}</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: '0.15rem' }}>
+            {t('ai.bannerSubtitle')}
           </div>
         </div>
       </div>
@@ -88,10 +91,10 @@ export default function InsightsPage() {
           {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ height: 100 }} />)}
         </div>
       ) : insights.length === 0 ? (
-        <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', color: '#475569' }}>
+        <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
           <Brain size={40} style={{ margin: '0 auto 0.75rem', opacity: 0.5 }} />
-          <p style={{ fontWeight: 600, color: '#94a3b8' }}>Aucun insight disponible</p>
-          <p style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>Ajoutez des transactions pour recevoir des conseils personnalisés</p>
+          <p style={{ fontWeight: 600 }}>{t('ai.noneTitle')}</p>
+          <p style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>{t('ai.noneSubtitle')}</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
@@ -115,12 +118,12 @@ export default function InsightsPage() {
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.375rem' }}>
-                      <span style={{ fontWeight: 700, color: 'white', fontSize: '0.95rem', fontFamily: 'var(--font-jakarta)' }}>{insight.title}</span>
+                      <span style={{ fontWeight: 700, color: 'var(--text-heading)', fontSize: '0.95rem', fontFamily: 'var(--font-jakarta)' }}>{insight.title}</span>
                       <span style={{ padding: '0.1rem 0.5rem', borderRadius: '9999px', fontSize: '0.65rem', fontWeight: 700, background: `${colors.border}22`, color: colors.icon }}>
-                        {typeLabels[insight.type]}
+                        {t(typeLabels[insight.type])}
                       </span>
                     </div>
-                    <p style={{ color: '#94a3b8', fontSize: '0.875rem', lineHeight: 1.6 }}>{insight.message}</p>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', lineHeight: 1.6 }}>{insight.message}</p>
                   </div>
                 </div>
               </div>

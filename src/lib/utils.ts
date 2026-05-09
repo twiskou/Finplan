@@ -84,9 +84,13 @@ export const PAYMENT_METHODS = [
   'Espèces', 'BaridiMob', 'Edahabia', 'CIB', 'Virement', 'Autre'
 ]
 
-export function getDaysUntil(date: Date | string): number {
-  const now = new Date()
+export function getDaysUntil(date: Date | string | number): number {
   const target = new Date(date)
-  const diff = target.getTime() - now.getTime()
+  if (isNaN(target.getTime())) return 0
+  // Normalize both to midnight local time to avoid partial-day timezone issues
+  const now = new Date()
+  const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const targetMidnight = new Date(target.getFullYear(), target.getMonth(), target.getDate())
+  const diff = targetMidnight.getTime() - nowMidnight.getTime()
   return Math.ceil(diff / (1000 * 60 * 60 * 24))
 }

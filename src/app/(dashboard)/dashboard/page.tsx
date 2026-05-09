@@ -29,7 +29,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch(`/api/transactions?month=${month}&year=${year}`).then(r => r.json()),
+      fetch(`/api/transactions`).then(r => r.json()), // Fetch ALL to populate charts properly
       fetch(`/api/budgets?month=${month}&year=${year}`).then(r => r.json()),
       fetch('/api/goals').then(r => r.json()),
     ]).then(([tx, bgt, gls]) => {
@@ -40,13 +40,19 @@ export default function DashboardPage() {
     })
   }, [month, year])
 
-  const income = transactions.filter(t => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0)
-  const expense = transactions.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + t.amount, 0)
+  // Filter for current month's KPIs
+  const currentMonthTx = transactions.filter(t => {
+    const d = new Date(t.date)
+    return d.getMonth() + 1 === month && d.getFullYear() === year
+  })
+
+  const income = currentMonthTx.filter(t => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0)
+  const expense = currentMonthTx.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + t.amount, 0)
   const balance = income - expense
   const savingsRate = income > 0 ? Math.round((balance / income) * 100) : 0
 
   const expByCat: Record<string, number> = {}
-  transactions.filter(t => t.type === 'EXPENSE').forEach(t => {
+  currentMonthTx.filter(t => t.type === 'EXPENSE').forEach(t => {
     expByCat[t.category] = (expByCat[t.category] || 0) + t.amount
   })
   const catLabels = Object.keys(expByCat)

@@ -12,6 +12,17 @@ export async function GET(req: NextRequest) {
   const payload = await getUser(req)
   if (!payload) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
 
+  const user = await prisma.user.findUnique({ where: { id: payload.userId }, select: { language: true } })
+  const userLang = user?.language || 'fr'
+
+  // Generate notifications dynamically
+  try {
+    const { checkAndGenerateNotifications } = await import('@/lib/notification-engine')
+    await checkAndGenerateNotifications(payload.userId, userLang)
+  } catch (error) {
+    console.error('Failed to generate notifications:', error)
+  }
+
   const notifications = await prisma.notification.findMany({
     where: { userId: payload.userId },
     orderBy: { createdAt: 'desc' },

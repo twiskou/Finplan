@@ -15,6 +15,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params
   const body = await req.json()
 
+  const existingBill = await prisma.bill.findUnique({
+    where: { id, userId: payload.userId }
+  })
+
+  if (!existingBill) {
+    return NextResponse.json({ error: 'Facture non trouvée' }, { status: 404 })
+  }
+
   await prisma.bill.updateMany({
     where: { id, userId: payload.userId },
     data: {
@@ -26,6 +34,36 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       isPaid: body.isPaid,
     },
   })
+
+  // Auto-create transaction if marked as paid for the first time
+  if (!existingBill.isPaid && body.isPaid) {
+    const txDate = new Date(body.dueDate)
+    const txCategory = body.category || 'Factures'
+    
+    await prisma.transaction.create({
+      data: {
+        userId: payload.userId,
+        type: 'EXPENSE',
+        amount: parseFloat(body.amount),
+        currency: existingBill.currency,
+        category: txCategory,
+        description: `Paiement facture : ${body.name}`,
+        date: txDate,
+        paymentMethod: 'Automatique',
+      }
+    })
+
+    // Also update the budget spent amount for this month and category
+    await prisma.budget.updateMany({
+      where: {
+        userId: payload.userId,
+        category: txCategory,
+        month: txDate.getMonth() + 1,
+        year: txDate.getFullYear(),
+      },
+      data: { spent: { increment: parseFloat(body.amount) } },
+    })
+  }
 
   return NextResponse.json({ message: 'Mis à jour' })
 }

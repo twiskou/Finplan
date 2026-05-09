@@ -19,16 +19,30 @@ export default function Footer() {
         textAlign: 'center',
       }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none' }}>
-          <div style={{
-            width: 28, height: 28, borderRadius: '8px',
-            background: 'linear-gradient(135deg, #4f46e5, #8b5cf6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <TrendingUp size={16} color="white" />
+          <>
+            <img 
+              src="/logo.png" 
+              alt="Finplan Logo" 
+              style={{ height: '48px', width: 'auto', objectFit: 'contain' }}
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                const fallback = document.getElementById('footer-logo-fallback');
+                if (fallback) fallback.style.display = 'flex';
+              }}
+            />
+          </>
+          <div id="footer-logo-fallback" style={{ display: 'none', alignItems: 'center', gap: '0.5rem' }}>
+            <div style={{
+              width: 28, height: 28, borderRadius: '8px',
+              background: 'linear-gradient(135deg, #4f46e5, #8b5cf6)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <TrendingUp size={16} color="white" />
+            </div>
+            <span style={{ fontWeight: 800, color: 'var(--text-heading)', fontFamily: 'var(--font-jakarta)' }}>
+              Fin<span style={{ color: '#6366f1' }}>plan</span>
+            </span>
           </div>
-          <span style={{ fontWeight: 800, color: 'var(--text-heading)', fontFamily: 'var(--font-jakarta)' }}>
-            Fin<span style={{ color: '#6366f1' }}>plan</span>
-          </span>
         </Link>
 
         <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -49,7 +63,7 @@ export default function Footer() {
         </div>
 
         <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-          © 2025 Finplan
+          © 2026 Finplan
           <Heart size={12} style={{ color: '#4f46e5' }} />
         </p>
       </div>

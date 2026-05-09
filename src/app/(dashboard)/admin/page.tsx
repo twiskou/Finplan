@@ -66,7 +66,7 @@ export default function AdminPage() {
             { label: 'Utilisateurs', value: stats.totalUsers, icon: Users, color: '#6366f1', bg: 'rgba(99,102,241,0.08)' },
             { label: 'Premium', value: stats.premiumUsers, icon: Crown, color: '#f59e0b', bg: 'rgba(245,158,11,0.08)' },
             { label: 'Transactions', value: stats.totalTransactions, icon: BarChart3, color: '#22c55e', bg: 'rgba(34,197,94,0.08)' },
-            { label: 'Revenu mensuel', value: `${stats.monthlyRevenue * 990} DA`, icon: CreditCard, color: '#ec4899', bg: 'rgba(236,72,153,0.08)' },
+            { label: 'Revenu mensuel', value: `${(stats.monthlyRevenue * 990).toLocaleString()} DA`, icon: CreditCard, color: '#ec4899', bg: 'rgba(236,72,153,0.08)' },
           ].map(card => (
             <div key={card.label} className="glass-card" style={{ padding: '1.25rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>

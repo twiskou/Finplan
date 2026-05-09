@@ -2,6 +2,9 @@
 import { useEffect, useState } from 'react'
 import { Plus, Trash2, X, FileText, AlertTriangle, CheckCircle2, Clock } from 'lucide-react'
 import { formatCurrency, getDaysUntil } from '@/lib/utils'
+import { useTranslation } from '@/contexts/LanguageContext'
+import { TranslationKey } from '@/lib/i18n'
+import { ConfirmModal } from '../layout'
 
 interface Bill {
   id: string; name: string; amount: number; currency: string
@@ -18,9 +21,11 @@ const FREQUENCIES = [
 const CATEGORIES = ['Internet', 'Téléphone', 'Électricité', 'Eau', 'Gaz', 'Loyer', 'Assurance', 'Abonnement', 'Autre']
 
 export default function BillsPage() {
+  const { t } = useTranslation()
   const [bills, setBills] = useState<Bill[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [confirmId, setConfirmId] = useState<string | null>(null)
   const [form, setForm] = useState({ name: '', amount: '', currency: 'DZD', dueDate: '', frequency: 'MONTHLY', category: '' })
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
@@ -41,7 +46,7 @@ export default function BillsPage() {
   async function handleSave(e: React.FormEvent) {
     e.preventDefault(); setSaving(true)
     const r = await fetch('/api/bills', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
-    if (r.ok) { setShowModal(false); setForm({ name: '', amount: '', currency: 'DZD', dueDate: '', frequency: 'MONTHLY', category: '' }); load(); showToast('Facture ajoutée') }
+    if (r.ok) { setShowModal(false); setForm({ name: '', amount: '', currency: 'DZD', dueDate: '', frequency: 'MONTHLY', category: '' }); load(); showToast(t('bill.added')) }
     else showToast('Erreur', 'error')
     setSaving(false)
   }
@@ -55,9 +60,8 @@ export default function BillsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Supprimer cette facture ?')) return
     await fetch(`/api/bills/${id}`, { method: 'DELETE' })
-    load(); showToast('Facture supprimée')
+    load(); showToast(t('bill.deleted')); setConfirmId(null)
   }
 
   const unpaid = bills.filter(b => !b.isPaid)
@@ -68,27 +72,28 @@ export default function BillsPage() {
   return (
     <div style={{ paddingBottom: '5rem', maxWidth: '900px' }}>
       {toast && <div className={`toast toast-${toast.type}`}>{toast.msg}</div>}
+      {confirmId && <ConfirmModal message={t('bill.deleteConfirm')} onConfirm={() => handleDelete(confirmId)} onCancel={() => setConfirmId(null)} />}
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontFamily: 'var(--font-jakarta)', fontSize: '1.5rem', fontWeight: 800, color: 'white' }}>Factures</h1>
-          <p style={{ color: '#64748b', fontSize: '0.875rem' }}>{unpaid.length} facture(s) à payer</p>
+          <h1 style={{ fontFamily: 'var(--font-jakarta)', fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-heading)' }}>{t('bill.title')}</h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>{unpaid.length} {t('bill.unpaidCount')}</p>
         </div>
-        <button className="btn-primary" onClick={() => setShowModal(true)}><Plus size={18} /> Nouvelle facture</button>
+        <button className="btn-primary" onClick={() => setShowModal(true)}><Plus size={18} /> {t('bill.new')}</button>
       </div>
 
       {/* Summary */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
         <div className="stat-card">
-          <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>À payer</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>{t('bill.toPay')}</div>
           <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f59e0b', marginTop: '0.25rem' }}>{formatCurrency(totalUnpaid)}</div>
         </div>
         <div className="stat-card">
-          <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Urgentes</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>{t('bill.urgent')}</div>
           <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ef4444', marginTop: '0.25rem' }}>{urgent.length}</div>
         </div>
         <div className="stat-card">
-          <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Payées</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>{t('bill.paid')}</div>
           <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#22c55e', marginTop: '0.25rem' }}>{paid.length}</div>
         </div>
       </div>
@@ -97,17 +102,17 @@ export default function BillsPage() {
       {loading ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>{[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: 80 }} />)}</div>
       ) : bills.length === 0 ? (
-        <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', color: '#475569' }}>
+        <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
           <FileText size={40} style={{ margin: '0 auto 0.75rem', opacity: 0.5 }} />
-          <p style={{ fontWeight: 600, color: '#94a3b8' }}>Aucune facture enregistrée</p>
-          <button className="btn-primary" onClick={() => setShowModal(true)} style={{ marginTop: '1rem' }}><Plus size={16} /> Ajouter</button>
+          <p style={{ fontWeight: 600 }}>{t('bill.none')}</p>
+          <button className="btn-primary" onClick={() => setShowModal(true)} style={{ marginTop: '1rem' }}><Plus size={16} /> {t('common.add')}</button>
         </div>
       ) : (
         <div>
           {unpaid.length > 0 && (
             <div style={{ marginBottom: '1.5rem' }}>
               <h3 style={{ fontWeight: 700, color: '#f59e0b', fontSize: '0.9rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <AlertTriangle size={16} /> À payer ({unpaid.length})
+                <AlertTriangle size={16} /> {t('bill.toPay')} ({unpaid.length})
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
                 {unpaid.map(b => {
@@ -121,18 +126,18 @@ export default function BillsPage() {
                         background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                       }} />
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 600, color: 'white', fontSize: '0.9rem' }}>{b.name}</div>
-                        <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.78rem', color: '#64748b', marginTop: '0.15rem' }}>
-                          {b.category && <span>{b.category}</span>}
-                          <span>• {FREQUENCIES.find(f => f.value === b.frequency)?.label}</span>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: isLate ? '#ef4444' : isUrgent ? '#f59e0b' : '#64748b' }}>
+                        <div style={{ fontWeight: 600, color: 'var(--text-heading)', fontSize: '0.9rem' }}>{b.name}</div>
+                        <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+                          {b.category && <span>{t(`cat.${b.category}` as TranslationKey) || b.category}</span>}
+                          <span>• {t(`freq.${b.frequency}` as TranslationKey) || b.frequency}</span>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: isLate ? '#ef4444' : isUrgent ? '#f59e0b' : 'var(--text-muted)' }}>
                             <Clock size={11} />
-                            {isLate ? `${Math.abs(days)}j en retard` : days === 0 ? "Aujourd'hui" : `${days}j restants`}
+                            {isLate ? `${Math.abs(days)}${t('bill.daysLate')}` : days === 0 ? t('bill.today') : `${days}${t('bill.daysLeft')}`}
                           </span>
                         </div>
                       </div>
                       <span style={{ fontWeight: 800, color: '#f59e0b', whiteSpace: 'nowrap' }}>{formatCurrency(b.amount)}</span>
-                      <button onClick={() => handleDelete(b.id)} style={{ width: 30, height: 30, borderRadius: '8px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', cursor: 'pointer', color: '#f87171', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <button onClick={() => setConfirmId(b.id)} style={{ width: 30, height: 30, borderRadius: '8px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', cursor: 'pointer', color: '#f87171', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <Trash2 size={14} />
                       </button>
                     </div>
@@ -145,7 +150,7 @@ export default function BillsPage() {
           {paid.length > 0 && (
             <div>
               <h3 style={{ fontWeight: 700, color: '#22c55e', fontSize: '0.9rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <CheckCircle2 size={16} /> Payées ({paid.length})
+                <CheckCircle2 size={16} /> {t('bill.paid')} ({paid.length})
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
                 {paid.map(b => (
@@ -157,10 +162,10 @@ export default function BillsPage() {
                       <CheckCircle2 size={14} color="white" />
                     </button>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600, color: '#94a3b8', fontSize: '0.9rem', textDecoration: 'line-through' }}>{b.name}</div>
+                      <div style={{ fontWeight: 600, color: 'var(--text-muted)', fontSize: '0.9rem', textDecoration: 'line-through' }}>{b.name}</div>
                     </div>
-                    <span style={{ fontWeight: 700, color: '#64748b' }}>{formatCurrency(b.amount)}</span>
-                    <button onClick={() => handleDelete(b.id)} style={{ width: 30, height: 30, borderRadius: '8px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', cursor: 'pointer', color: '#f87171', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <span style={{ fontWeight: 700, color: 'var(--text-muted)' }}>{formatCurrency(b.amount)}</span>
+                    <button onClick={() => setConfirmId(b.id)} style={{ width: 30, height: 30, borderRadius: '8px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', cursor: 'pointer', color: '#f87171', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <Trash2 size={14} />
                     </button>
                   </div>
@@ -175,37 +180,37 @@ export default function BillsPage() {
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowModal(false)}>
           <div className="modal-box">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-              <h2 style={{ fontFamily: 'var(--font-jakarta)', fontWeight: 800, color: 'white', fontSize: '1.1rem' }}>Nouvelle facture</h2>
-              <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}><X size={20} /></button>
+              <h2 style={{ fontFamily: 'var(--font-jakarta)', fontWeight: 800, color: 'var(--text-heading)', fontSize: '1.1rem' }}>{t('bill.new')}</h2>
+              <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={20} /></button>
             </div>
             <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.375rem' }}>Nom</label>
-                <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="input-field" placeholder="Ex: Internet, Loyer..." required />
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.375rem' }}>{t('bill.name')}</label>
+                <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="input-field" placeholder={t('bill.namePlaceholder')} required />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.375rem' }}>Montant (DA)</label>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.375rem' }}>{t('bill.amount')}</label>
                 <input type="number" min="1" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} className="input-field" placeholder="3500" required />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.375rem' }}>Date d&apos;échéance</label>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.375rem' }}>{t('bill.dueDate')}</label>
                 <input type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} className="input-field" required />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.375rem' }}>Fréquence</label>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.375rem' }}>{t('bill.frequency')}</label>
                 <select value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))} className="input-field">
-                  {FREQUENCIES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                  {FREQUENCIES.map(f => <option key={f.value} value={f.value}>{t(`freq.${f.value}` as TranslationKey) || f.label}</option>)}
                 </select>
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.375rem' }}>Catégorie</label>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.375rem' }}>{t('tx.category')}</label>
                 <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className="input-field">
-                  <option value="">Sélectionner...</option>
-                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  <option value="">{t('tx.select')}</option>
+                  {CATEGORIES.map(c => <option key={c} value={c}>{t(`cat.${c}` as TranslationKey) || c}</option>)}
                 </select>
               </div>
               <button type="submit" className="btn-primary" disabled={saving} style={{ justifyContent: 'center' }}>
-                {saving ? 'Enregistrement...' : 'Ajouter la facture'}
+                {saving ? t('common.saving') : t('bill.addBtn')}
               </button>
             </form>
           </div>

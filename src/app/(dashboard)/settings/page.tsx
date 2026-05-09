@@ -36,7 +36,8 @@ export default function SettingsPage() {
         }
       }
     })
-  }, [setActiveTheme, setLang])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault(); setSaving(true)

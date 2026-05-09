@@ -41,7 +41,16 @@ export default function TransactionsPage() {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [month, filterType])
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true)
+      const r = await fetch(`/api/transactions?month=${month}&year=${year}${filterType ? `&type=${filterType}` : ''}`)
+      const d = await r.json()
+      setTransactions(d.transactions || [])
+      setLoading(false)
+    }
+    loadData()
+  }, [month, year, filterType])
 
   function openAdd() { setEditTx(null); setForm({ type: 'EXPENSE', amount: '', currency: 'DZD', category: '', description: '', date: new Date().toISOString().split('T')[0], paymentMethod: '' }); setShowModal(true) }
   function openEdit(tx: Transaction) { setEditTx(tx); setForm({ type: tx.type, amount: String(tx.amount), currency: tx.currency, category: tx.category, description: tx.description || '', date: tx.date.split('T')[0], paymentMethod: tx.paymentMethod || '' }); setShowModal(true) }

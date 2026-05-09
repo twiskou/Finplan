@@ -32,7 +32,7 @@ export { ConfirmModal }
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  const { t } = useTranslation()
+  const { t, isRTL } = useTranslation()
   const [user, setUser] = useState<User | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [notifCount, setNotifCount] = useState(0)
@@ -49,9 +49,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     fetch('/api/auth/me').then(r => r.json()).then(d => {
-      if (d.user) setUser(d.user)
-      else router.push('/login')
-    }).catch(() => router.push('/login'))
+      if (d.user) {
+        setUser(d.user)
+      } else {
+        // Token is stale or user was deleted — clear cookie then redirect
+        fetch('/api/auth/logout', { method: 'POST' }).finally(() => router.push('/login'))
+      }
+    }).catch(() => {
+      fetch('/api/auth/logout', { method: 'POST' }).finally(() => router.push('/login'))
+    })
 
     fetch('/api/notifications').then(r => r.json()).then(d => {
       if (d.notifications) setNotifCount(d.notifications.filter((n: { isRead: boolean }) => !n.isRead).length)
@@ -79,13 +85,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const SidebarContent = () => (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '1.25rem' }}>
-      <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none', marginBottom: '2rem', padding: '0 0.25rem' }}>
-        <div style={{ width: 36, height: 36, borderRadius: '10px', background: 'linear-gradient(135deg, #4f46e5, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <TrendingUp size={20} color="white" />
+      <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', marginBottom: '2rem', padding: '0 0.25rem' }}>
+        <>
+          <img 
+            src="/logo.png" 
+            alt="Finplan Logo" 
+            style={{ height: '52px', width: 'auto', objectFit: 'contain' }}
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              const fallback = e.currentTarget.parentElement?.nextElementSibling as HTMLElement;
+              if (fallback) fallback.style.display = 'flex';
+            }}
+          />
+        </>
+        <div className="sidebar-logo-fallback" style={{ display: 'none', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{ width: 36, height: 36, borderRadius: '10px', background: 'linear-gradient(135deg, #4f46e5, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <TrendingUp size={20} color="white" />
+          </div>
+          <span style={{ fontSize: '1.2rem', fontWeight: 900, fontFamily: 'var(--font-jakarta)', color: 'white' }}>
+            Fin<span style={{ color: '#6366f1' }}>plan</span>
+          </span>
         </div>
-        <span style={{ fontSize: '1.2rem', fontWeight: 900, fontFamily: 'var(--font-jakarta)', color: 'white' }}>
-          Fin<span style={{ color: '#6366f1' }}>plan</span>
-        </span>
       </Link>
 
       <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: 1 }}>
@@ -157,8 +177,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <aside style={{
         width: '260px', flexShrink: 0,
         background: 'rgba(15, 15, 26, 0.98)',
-        borderRight: '1px solid rgba(99, 102, 241, 0.1)',
-        position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 30,
+        borderRight: isRTL ? 'none' : '1px solid rgba(99, 102, 241, 0.1)',
+        borderLeft: isRTL ? '1px solid rgba(99, 102, 241, 0.1)' : 'none',
+        position: 'fixed', left: isRTL ? 'auto' : 0, right: isRTL ? 0 : 'auto', top: 0, bottom: 0, zIndex: 30,
         display: 'none',
       }} className="desktop-sidebar">
         <SidebarContent />
@@ -174,9 +195,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <aside style={{
         width: '260px', flexShrink: 0,
         background: 'rgba(15, 15, 26, 0.98)',
-        borderRight: '1px solid rgba(99, 102, 241, 0.1)',
-        position: 'fixed', left: sidebarOpen ? 0 : '-280px', top: 0, bottom: 0, zIndex: 50,
-        transition: 'left 0.3s ease',
+        borderRight: isRTL ? 'none' : '1px solid rgba(99, 102, 241, 0.1)',
+        borderLeft: isRTL ? '1px solid rgba(99, 102, 241, 0.1)' : 'none',
+        position: 'fixed', 
+        left: isRTL ? 'auto' : (sidebarOpen ? 0 : '-280px'), 
+        right: isRTL ? (sidebarOpen ? 0 : '-280px') : 'auto',
+        top: 0, bottom: 0, zIndex: 50,
+        transition: 'all 0.3s ease',
       }} className="mobile-sidebar">
         <SidebarContent />
       </aside>
@@ -251,7 +276,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         @media (min-width: 768px) {
           .desktop-sidebar { display: flex !important; flex-direction: column; }
           .mobile-sidebar { display: none !important; }
-          main { margin-left: 260px !important; }
+          main { margin-left: ${isRTL ? '0' : '260px'} !important; margin-right: ${isRTL ? '260px' : '0'} !important; }
           nav[style*="position: fixed; bottom: 0"] { display: none !important; }
           header button:first-child { display: none !important; }
         }

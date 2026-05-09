@@ -80,11 +80,6 @@ export default function LoginPage() {
               </button>
             </form>
 
-            <div style={{ marginTop: '1.5rem', padding: '1rem', borderRadius: '0.75rem', background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.12)', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              <div style={{ fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.25rem' }}>{t('auth.demo')} :</div>
-              <div>Email : <span style={{ color: '#a5b4fc' }}>demo@finplan.dz</span></div>
-              <div>Password : <span style={{ color: '#a5b4fc' }}>demo123</span></div>
-            </div>
 
             <p style={{ textAlign: 'center', marginTop: '1.25rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
               {t('auth.noAccount')}{' '}

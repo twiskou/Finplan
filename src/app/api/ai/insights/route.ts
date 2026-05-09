@@ -10,6 +10,8 @@ export async function GET(req: NextRequest) {
   const payload = await verifyToken(token)
   if (!payload) return NextResponse.json({ error: 'Token invalide' }, { status: 401 })
 
+  const lang = req.nextUrl.searchParams.get('lang') || 'fr'
+
   const [transactions, budgets, goals, bills, debts] = await Promise.all([
     prisma.transaction.findMany({ where: { userId: payload.userId }, orderBy: { date: 'desc' }, take: 200 }),
     prisma.budget.findMany({ where: { userId: payload.userId } }),
@@ -18,7 +20,7 @@ export async function GET(req: NextRequest) {
     prisma.debt.findMany({ where: { userId: payload.userId } }),
   ])
 
-  const insights = generateInsights({ transactions, budgets, goals, bills, debts })
+  const insights = generateInsights({ transactions, budgets, goals, bills, debts }, lang as any)
 
   return NextResponse.json({ insights })
 }
