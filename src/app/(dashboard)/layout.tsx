@@ -90,7 +90,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <img 
             src="/logo.png" 
             alt="Finplan Logo" 
-            style={{ height: '52px', width: 'auto', objectFit: 'contain' }}
+            style={{ height: '60px', width: 'auto', objectFit: 'contain' }}
             onError={(e) => {
               e.currentTarget.style.display = 'none';
               const fallback = e.currentTarget.parentElement?.nextElementSibling as HTMLElement;
@@ -223,7 +223,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           >
             {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginInlineStart: 'auto' }}>
             <Link href="/notifications" style={{ position: 'relative', color: 'var(--text-muted)', display: 'flex' }}>
               <Bell size={20} />
               {notifCount > 0 && (

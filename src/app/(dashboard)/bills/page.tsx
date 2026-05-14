@@ -120,7 +120,7 @@ export default function BillsPage() {
                   const isUrgent = days <= 3
                   const isLate = days < 0
                   return (
-                    <div key={b.id} className="glass-card" style={{ padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.875rem', borderColor: isLate ? 'rgba(239,68,68,0.3)' : isUrgent ? 'rgba(245,158,11,0.3)' : undefined }}>
+                    <div key={b.id} className="glass-card" style={{ padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.875rem', borderColor: (isLate || days === 0) ? 'rgba(239,68,68,0.3)' : isUrgent ? 'rgba(245,158,11,0.3)' : undefined }}>
                       <button onClick={() => togglePaid(b)} style={{
                         width: 24, height: 24, borderRadius: '50%', border: '2px solid rgba(99,102,241,0.3)',
                         background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
@@ -130,7 +130,7 @@ export default function BillsPage() {
                         <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
                           {b.category && <span>{t(`cat.${b.category}` as TranslationKey) || b.category}</span>}
                           <span>• {t(`freq.${b.frequency}` as TranslationKey) || b.frequency}</span>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: isLate ? '#ef4444' : isUrgent ? '#f59e0b' : 'var(--text-muted)' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: (isLate || days === 0) ? '#ef4444' : isUrgent ? '#f59e0b' : 'var(--text-muted)' }}>
                             <Clock size={11} />
                             {isLate ? `${Math.abs(days)}${t('bill.daysLate')}` : days === 0 ? t('bill.today') : `${days}${t('bill.daysLeft')}`}
                           </span>

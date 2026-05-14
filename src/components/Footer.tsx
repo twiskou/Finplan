@@ -23,7 +23,7 @@ export default function Footer() {
             <img 
               src="/logo.png" 
               alt="Finplan Logo" 
-              style={{ height: '48px', width: 'auto', objectFit: 'contain' }}
+              style={{ height: '68px', width: 'auto', objectFit: 'contain' }}
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
                 const fallback = document.getElementById('footer-logo-fallback');

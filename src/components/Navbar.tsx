@@ -68,7 +68,7 @@ export default function Navbar({ activePage }: NavbarProps) {
           <img
             src="/logo.png"
             alt="Finplan Logo"
-            style={{ height: '56px', width: 'auto', objectFit: 'contain' }}
+            style={{ height: '80px', width: 'auto', objectFit: 'contain' }}
             onError={(e) => {
               e.currentTarget.style.display = 'none'
               if (fallbackRef.current) fallbackRef.current.style.display = 'flex'
@@ -137,16 +137,16 @@ export default function Navbar({ activePage }: NavbarProps) {
           
           {/* Toggles (Always visible) */}
           {mounted && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginRight: '0.25rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginRight: '0.5rem' }}>
               <div style={{ position: 'relative' }}>
                 <button 
                   onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
                   title="Changer la langue"
                   className="hover-icon-btn"
-                  style={{ gap: '0.35rem' }}
+                  style={{ display: 'flex', alignItems: 'center', flexDirection: 'row', gap: '0.4rem' }}
                 >
-                  <Globe size={18} />
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>{lang.toUpperCase()}</span>
+                  <Globe size={18} style={{ flexShrink: 0 }} />
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, whiteSpace: 'nowrap' }}>{lang.toUpperCase()}</span>
                 </button>
 
                 {isLangMenuOpen && (
