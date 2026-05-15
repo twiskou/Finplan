@@ -1,10 +1,14 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, X, FileText, AlertTriangle, CheckCircle2, Clock } from 'lucide-react'
+import { Plus, Trash2, X, FileText, AlertTriangle, CheckCircle2, Clock, ScanLine } from 'lucide-react'
 import { formatCurrency, getDaysUntil } from '@/lib/utils'
 import { useTranslation } from '@/contexts/LanguageContext'
 import { TranslationKey } from '@/lib/i18n'
 import { ConfirmModal } from '../layout'
+import dynamic from 'next/dynamic'
+import PaymentModal from '@/components/PaymentModal'
+
+const QRScannerModal = dynamic(() => import('@/components/QRScannerModal'), { ssr: false })
 
 interface Bill {
   id: string; name: string; amount: number; currency: string
@@ -29,6 +33,10 @@ export default function BillsPage() {
   const [form, setForm] = useState({ name: '', amount: '', currency: 'DZD', dueDate: '', frequency: 'MONTHLY', category: '' })
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
+  const [showScanner, setShowScanner] = useState(false)
+  const [pendingBill, setPendingBill] = useState<{ billName: string; amount: number; billId: string } | null>(null)
+  const [paymentData, setPaymentData] = useState<{ billName: string; amount: number; billId?: string } | null>(null)
+  const [confirmPayId, setConfirmPayId] = useState<string | null>(null) // confirm before manual pay
 
   function showToast(msg: string, type: 'success' | 'error' = 'success') {
     setToast({ msg, type }); setTimeout(() => setToast(null), 3000)
@@ -59,6 +67,20 @@ export default function BillsPage() {
     load()
   }
 
+  async function markAsPaid(billId: string) {
+    const bill = bills.find(b => b.id === billId)
+    if (!bill || bill.isPaid) return
+    const res = await fetch(`/api/bills/${billId}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...bill, isPaid: true }),
+    })
+    if (!res.ok) {
+      showToast('Erreur lors du marquage de la facture', 'error')
+      return
+    }
+    load()
+  }
+
   async function handleDelete(id: string) {
     await fetch(`/api/bills/${id}`, { method: 'DELETE' })
     load(); showToast(t('bill.deleted')); setConfirmId(null)
@@ -73,6 +95,56 @@ export default function BillsPage() {
     <div style={{ paddingBottom: '5rem', maxWidth: '900px' }}>
       {toast && <div className={`toast toast-${toast.type}`}>{toast.msg}</div>}
       {confirmId && <ConfirmModal message={t('bill.deleteConfirm')} onConfirm={() => handleDelete(confirmId)} onCancel={() => setConfirmId(null)} />}
+      {confirmPayId && (
+        <ConfirmModal
+          message={t('bill.payConfirm')}
+          onConfirm={async () => {
+            const id = confirmPayId
+            setConfirmPayId(null)
+            await markAsPaid(id)
+            showToast(t('bill.paySuccess'))
+          }}
+          onCancel={() => setConfirmPayId(null)}
+        />
+      )}
+      {showScanner && (
+        <QRScannerModal
+          onClose={() => {
+            setShowScanner(false)
+            setPendingBill(null) // discard the pending bill on cancel
+          }}
+          onScan={() => {
+            setShowScanner(false)
+            // Move pending bill into paymentData — NOW the payment modal opens
+            if (pendingBill) {
+              setPaymentData(pendingBill)
+              setPendingBill(null)
+            }
+          }}
+          onSkipToPayment={() => {
+            // Skip scan — go directly to payment with the bill's real amount
+            if (pendingBill) {
+              setPaymentData(pendingBill)
+              setPendingBill(null)
+            }
+          }}
+        />
+      )}
+      {paymentData && (
+        <PaymentModal
+          billName={paymentData.billName}
+          amount={paymentData.amount}
+          onClose={() => setPaymentData(null)}
+          onSuccess={async () => {
+            const billId = paymentData.billId // capture before state changes
+            setPaymentData(null)
+            if (billId) {
+              await markAsPaid(billId)
+            }
+            showToast('Paiement effectué avec succès !')
+          }}
+        />
+      )}
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
@@ -121,10 +193,13 @@ export default function BillsPage() {
                   const isLate = days < 0
                   return (
                     <div key={b.id} className="glass-card" style={{ padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.875rem', borderColor: (isLate || days === 0) ? 'rgba(239,68,68,0.3)' : isUrgent ? 'rgba(245,158,11,0.3)' : undefined }}>
-                      <button onClick={() => togglePaid(b)} style={{
-                        width: 24, height: 24, borderRadius: '50%', border: '2px solid rgba(99,102,241,0.3)',
-                        background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                      }} />
+                      <button
+                        onClick={() => setConfirmPayId(b.id)}
+                        title="Marquer comme payée"
+                        style={{
+                          width: 24, height: 24, borderRadius: '50%', border: '2px solid rgba(99,102,241,0.3)',
+                          background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                        }} />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 600, color: 'var(--text-heading)', fontSize: '0.9rem' }}>{b.name}</div>
                         <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
@@ -137,6 +212,23 @@ export default function BillsPage() {
                         </div>
                       </div>
                       <span style={{ fontWeight: 800, color: '#f59e0b', whiteSpace: 'nowrap' }}>{formatCurrency(b.amount)}</span>
+                      {/* Scan QR button per bill */}
+                      <button
+                        onClick={() => {
+                          // Store the bill info — scanner opens first, payment form comes AFTER scan
+                          setPendingBill({ billName: b.name, amount: b.amount, billId: b.id })
+                          setShowScanner(true)
+                        }}
+                        title="Scanner le QR Code de cette facture"
+                        style={{
+                          width: 30, height: 30, borderRadius: '8px',
+                          background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)',
+                          cursor: 'pointer', color: '#818cf8',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                        }}
+                      >
+                        <ScanLine size={14} />
+                      </button>
                       <button onClick={() => setConfirmId(b.id)} style={{ width: 30, height: 30, borderRadius: '8px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', cursor: 'pointer', color: '#f87171', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <Trash2 size={14} />
                       </button>
@@ -154,20 +246,12 @@ export default function BillsPage() {
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
                 {paid.map(b => (
-                  <div key={b.id} className="glass-card" style={{ padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.875rem', opacity: 0.6 }}>
-                    <button onClick={() => togglePaid(b)} style={{
-                      width: 24, height: 24, borderRadius: '50%', border: '2px solid #22c55e',
-                      background: '#22c55e', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                    }}>
-                      <CheckCircle2 size={14} color="white" />
-                    </button>
+                  <div key={b.id} className="glass-card" style={{ padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
+                    <CheckCircle2 size={22} color="#22c55e" style={{ flexShrink: 0 }} />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 600, color: 'var(--text-muted)', fontSize: '0.9rem', textDecoration: 'line-through' }}>{b.name}</div>
                     </div>
-                    <span style={{ fontWeight: 700, color: 'var(--text-muted)' }}>{formatCurrency(b.amount)}</span>
-                    <button onClick={() => setConfirmId(b.id)} style={{ width: 30, height: 30, borderRadius: '8px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', cursor: 'pointer', color: '#f87171', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Trash2 size={14} />
-                    </button>
+                    <span style={{ fontWeight: 700, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{formatCurrency(b.amount)}</span>
                   </div>
                 ))}
               </div>
