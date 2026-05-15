@@ -2,7 +2,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { X, CreditCard, Lock, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
 import { useTranslation } from '@/contexts/LanguageContext'
-import { TranslationKey } from '@/lib/i18n'
 
 interface PaymentModalProps {
   billName: string

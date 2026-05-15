@@ -49,7 +49,8 @@ export default function BillsPage() {
     setBills(d.bills || [])
     setLoading(false)
   }
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, []) // eslint-disable-line react-hooks/set-state-in-effect
+
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault(); setSaving(true)
@@ -57,14 +58,6 @@ export default function BillsPage() {
     if (r.ok) { setShowModal(false); setForm({ name: '', amount: '', currency: 'DZD', dueDate: '', frequency: 'MONTHLY', category: '' }); load(); showToast(t('bill.added')) }
     else showToast('Erreur', 'error')
     setSaving(false)
-  }
-
-  async function togglePaid(bill: Bill) {
-    await fetch(`/api/bills/${bill.id}`, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...bill, isPaid: !bill.isPaid }),
-    })
-    load()
   }
 
   async function markAsPaid(billId: string) {

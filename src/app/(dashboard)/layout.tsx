@@ -83,7 +83,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     )
   }
 
-  const SidebarContent = () => (
+  const renderSidebarContent = () => (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '1.25rem' }}>
       <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', marginBottom: '2rem', padding: '0 0.25rem' }}>
         <>
@@ -182,7 +182,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         position: 'fixed', left: isRTL ? 'auto' : 0, right: isRTL ? 0 : 'auto', top: 0, bottom: 0, zIndex: 30,
         display: 'none',
       }} className="desktop-sidebar">
-        <SidebarContent />
+        {renderSidebarContent()}
       </aside>
 
       {/* Mobile Sidebar Overlay */}
@@ -203,7 +203,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         top: 0, bottom: 0, zIndex: 50,
         transition: 'all 0.3s ease',
       }} className="mobile-sidebar">
-        <SidebarContent />
+        {renderSidebarContent()}
       </aside>
 
       {/* Main */}
